@@ -69,9 +69,9 @@ export default function BettingCalculator() {
           case "Dead Heat":
             if (selection.deadHeatConfig) {
               const { participants } = selection.deadHeatConfig;
-              // Nova fórmula: quanto menos participantes, menor o retorno
-              const multiplier = 6 - participants; // 5 participantes = 1x, 4 = 2x, 3 = 3x, 2 = 4x
-              selectionReturn = stake * selection.odds * multiplier;
+              // Fórmula correta: divide pelo número de participantes
+              const divisor = 1 / participants;
+              selectionReturn = stake * selection.odds * divisor;
             }
             break;
           case "Anulada / N/P":
@@ -99,9 +99,9 @@ export default function BettingCalculator() {
           case "Dead Heat":
             if (selection.deadHeatConfig) {
               const { participants } = selection.deadHeatConfig;
-              // Nova fórmula: quanto menos participantes, menor o retorno
-              const multiplier = 6 - participants; // 5 participantes = 1x, 4 = 2x, 3 = 3x, 2 = 4x
-              accumulatedOdds *= selection.odds * multiplier;
+              // Fórmula correta: divide pelo número de participantes
+              const divisor = 1 / participants;
+              accumulatedOdds *= selection.odds * divisor;
             }
             break;
           case "Perdida":
