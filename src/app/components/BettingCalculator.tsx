@@ -59,26 +59,27 @@ export default function BettingCalculator() {
       selections.forEach((selection) => {
         let selectionReturn = 0;
 
-        switch (selection.result) {
-          case "Para Ganhar":
-            selectionReturn = stake * selection.odds;
-            break;
-          case "Para Ficar Colocado":
-            selectionReturn = stake * ((selection.odds - 1) * 0.2 + 1);
-            break;
-          case "Dead Heat":
-            if (selection.deadHeatConfig) {
-              const { participants } = selection.deadHeatConfig;
-              // Fórmula correta: divide pelo número de participantes
-              const divisor = 1 / participants;
-              selectionReturn = stake * selection.odds * divisor;
-            }
-            break;
-          case "Anulada / N/P":
-            selectionReturn = stake;
-            break;
-          default:
-            selectionReturn = 0;
+        // Pula seleções anuladas no cálculo
+        if (selection.result === "Anulada / N/P") {
+          selectionReturn = stake;
+        } else {
+          switch (selection.result) {
+            case "Para Ganhar":
+              selectionReturn = stake * selection.odds;
+              break;
+            case "Para Ficar Colocado":
+              selectionReturn = stake * ((selection.odds - 1) * 0.2 + 1);
+              break;
+            case "Dead Heat":
+              if (selection.deadHeatConfig) {
+                const { participants } = selection.deadHeatConfig;
+                const divisor = 1 / participants;
+                selectionReturn = stake * selection.odds * divisor;
+              }
+              break;
+            default:
+              selectionReturn = 0;
+          }
         }
 
         totalReturn += selectionReturn;
@@ -86,37 +87,35 @@ export default function BettingCalculator() {
     } else {
       let accumulatedOdds = 1;
       let hasLoss = false;
-      let hasVoid = false;
+      let activeSelections = 0;
 
       selections.forEach((selection) => {
-        switch (selection.result) {
-          case "Para Ganhar":
-            accumulatedOdds *= selection.odds;
-            break;
-          case "Para Ficar Colocado":
-            accumulatedOdds *= (selection.odds - 1) * 0.2 + 1;
-            break;
-          case "Dead Heat":
-            if (selection.deadHeatConfig) {
-              const { participants } = selection.deadHeatConfig;
-              // Fórmula correta: divide pelo número de participantes
-              const divisor = 1 / participants;
-              accumulatedOdds *= selection.odds * divisor;
-            }
-            break;
-          case "Perdida":
-            hasLoss = true;
-            break;
-          case "Anulada / N/P":
-            hasVoid = true;
-            break;
+        // Ignora seleções anuladas no cálculo de acumulador
+        if (selection.result !== "Anulada / N/P") {
+          activeSelections++;
+          switch (selection.result) {
+            case "Para Ganhar":
+              accumulatedOdds *= selection.odds;
+              break;
+            case "Para Ficar Colocado":
+              accumulatedOdds *= (selection.odds - 1) * 0.2 + 1;
+              break;
+            case "Dead Heat":
+              if (selection.deadHeatConfig) {
+                const { participants } = selection.deadHeatConfig;
+                const divisor = 1 / participants;
+                accumulatedOdds *= selection.odds * divisor;
+              }
+              break;
+            case "Perdida":
+              hasLoss = true;
+              break;
+          }
         }
       });
 
-      if (hasLoss) {
+      if (hasLoss || activeSelections === 0) {
         totalReturn = 0;
-      } else if (hasVoid) {
-        totalReturn = stake;
       } else {
         totalReturn = stake * accumulatedOdds;
       }
