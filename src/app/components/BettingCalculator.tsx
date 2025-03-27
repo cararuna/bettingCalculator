@@ -23,6 +23,7 @@ export default function BettingCalculator() {
   const [selectedSelectionId, setSelectedSelectionId] = useState<number | null>(
     null
   );
+  const [isComposite, setIsComposite] = useState(false);
 
   useEffect(() => {
     if (betType === "accumulator") {
@@ -44,37 +45,41 @@ export default function BettingCalculator() {
   }, [numSelections, betType]);
 
   const calculateTotalStake = (): number => {
+    let total = 0;
     if (betType === "simple") {
-      return stake * selections.length;
+      total = stake * selections.length;
+    } else {
+      total = stake;
     }
-    return stake;
+    return isComposite ? total * 2 : total;
   };
 
   const calculateReturn = (): number => {
     if (!stake) return 0;
 
     let totalReturn = 0;
+    const stakeToUse = isComposite ? stake * 2 : stake;
 
     if (betType === "simple") {
       selections.forEach((selection) => {
         let selectionReturn = 0;
 
-        // Pula seleções anuladas no cálculo
         if (selection.result === "Anulada / N/P") {
-          selectionReturn = stake;
+          selectionReturn = stakeToUse;
         } else {
           switch (selection.result) {
             case "Para Ganhar":
-              selectionReturn = stake * selection.odds;
+              const effectiveOdds = isComposite ? 2.72 : selection.odds;
+              selectionReturn = stakeToUse * effectiveOdds;
               break;
             case "Para Ficar Colocado":
-              selectionReturn = stake * ((selection.odds - 1) * 0.2 + 1);
+              selectionReturn = stakeToUse * ((selection.odds - 1) * 0.2 + 1);
               break;
             case "Dead Heat":
               if (selection.deadHeatConfig) {
                 const { participants } = selection.deadHeatConfig;
                 const divisor = 1 / participants;
-                selectionReturn = stake * selection.odds * divisor;
+                selectionReturn = stakeToUse * selection.odds * divisor;
               }
               break;
             default:
@@ -85,12 +90,13 @@ export default function BettingCalculator() {
         totalReturn += selectionReturn;
       });
     } else {
+      // Para apostas acumuladas
       let accumulatedOdds = 1;
       let hasLoss = false;
       let activeSelections = 0;
 
+      // Primeiro calcula as odds acumuladas
       selections.forEach((selection) => {
-        // Ignora seleções anuladas no cálculo de acumulador
         if (selection.result !== "Anulada / N/P") {
           activeSelections++;
           switch (selection.result) {
@@ -117,7 +123,11 @@ export default function BettingCalculator() {
       if (hasLoss || activeSelections === 0) {
         totalReturn = 0;
       } else {
-        totalReturn = stake * accumulatedOdds;
+        // Para V/C em acumulada, multiplicamos o resultado final por 29.9008
+        if (isComposite) {
+          accumulatedOdds = (accumulatedOdds * 29.9008) / 56;
+        }
+        totalReturn = stakeToUse * accumulatedOdds;
       }
     }
 
@@ -297,6 +307,7 @@ export default function BettingCalculator() {
                 step="0.01"
                 min="1.01"
               />
+              {isComposite && <span className="text-green-400">1/5</span>}
               {(betType === "simple" || selections.length > 1) && (
                 <button
                   onClick={() => removeSelection(selection.id)}
@@ -313,16 +324,28 @@ export default function BettingCalculator() {
       {/* Stake Input */}
       <div className="mb-6">
         <h2 className="text-lg mb-2">Valor de Aposta</h2>
-        <div className="flex items-center gap-2">
-          <span>R$</span>
-          <input
-            type="number"
-            value={stake}
-            onChange={handleStakeChange}
-            className="bg-gray-700 p-2 rounded w-32 text-right"
-            min="0"
-            step="0.01"
-          />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>R$</span>
+            <input
+              type="number"
+              value={stake}
+              onChange={handleStakeChange}
+              className="bg-gray-700 p-2 rounded w-32 text-right"
+              min="0"
+              step="0.01"
+            />
+            {isComposite && <span>x2</span>}
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isComposite}
+              onChange={(e) => setIsComposite(e.target.checked)}
+              className="form-checkbox h-5 w-5 text-green-600 rounded bg-gray-700"
+            />
+            <span>V/C</span>
+          </label>
         </div>
       </div>
 
@@ -332,7 +355,7 @@ export default function BettingCalculator() {
           <h3 className="text-sm text-gray-400">Valor de Aposta Total</h3>
           <p className="text-xl">R${calculateTotalStake().toFixed(2)}</p>
           <p className="text-sm text-gray-400">
-            R${stake.toFixed(2)} ×{" "}
+            R${stake.toFixed(2)} {isComposite && "x2"} ×{" "}
             {betType === "simple" ? selections.length : 1}
           </p>
         </div>
