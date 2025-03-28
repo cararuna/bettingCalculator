@@ -18,6 +18,25 @@ export interface Selection {
   deadHeatConfig?: DeadHeatConfig;
 }
 
+export interface BetTypeOption {
+  name: string;
+  selections: number;
+  bets: number;
+}
+
+export const BET_TYPES: BetTypeOption[] = [
+  { name: "Dupla", selections: 2, bets: 1 },
+  { name: "Tripla", selections: 3, bets: 1 },
+  { name: "Múltiplas de 4", selections: 4, bets: 1 },
+  { name: "Múltiplas de 5", selections: 5, bets: 1 },
+  { name: "Múltiplas de 6", selections: 6, bets: 1 },
+  { name: "Múltiplas de 7", selections: 7, bets: 1 },
+  { name: "Múltiplas de 8", selections: 8, bets: 1 },
+  { name: "Trixie", selections: 3, bets: 4 },
+  { name: "Yankee", selections: 4, bets: 11 },
+  { name: "Canadense / Super Yankee", selections: 5, bets: 26 },
+];
+
 export type BetCalculation = {
   totalStake: number;
   totalReturn: number;

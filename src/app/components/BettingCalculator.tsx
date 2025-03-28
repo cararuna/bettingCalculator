@@ -1,17 +1,22 @@
 "use client";
 
 import React, { useState, ChangeEvent, useEffect } from "react";
-import { BetType, BetResult, DeadHeatConfig } from "../types/betting";
+import {
+  BetType,
+  BetResult,
+  DeadHeatConfig,
+  BET_TYPES,
+  BetTypeOption,
+} from "../types/betting";
 import SelectionCounter from "./SelectionCounter";
 import BetResultModal from "./BetResultModal";
+import BetTypeModal from "./BetTypeModal";
 
 interface Selection {
   odds: number;
   id: number;
   result: BetResult;
-  deadHeatConfig?: {
-    participants: number;
-  };
+  deadHeatConfig?: DeadHeatConfig;
 }
 
 export default function BettingCalculator() {
@@ -20,10 +25,14 @@ export default function BettingCalculator() {
   const [stake, setStake] = useState<number>(100);
   const [numSelections, setNumSelections] = useState<number>(2);
   const [modalOpen, setModalOpen] = useState(false);
+  const [betTypeModalOpen, setBetTypeModalOpen] = useState(false);
   const [selectedSelectionId, setSelectedSelectionId] = useState<number | null>(
     null
   );
   const [isComposite, setIsComposite] = useState(false);
+  const [currentBetType, setCurrentBetType] = useState<BetTypeOption | null>(
+    null
+  );
 
   useEffect(() => {
     if (betType === "accumulator") {
@@ -46,7 +55,10 @@ export default function BettingCalculator() {
 
   const calculateTotalStake = (): number => {
     let total = 0;
-    if (betType === "simple") {
+    if (currentBetType) {
+      // Para tipos especiais (Trixie, Yankee, etc), multiplica o stake pelo número de apostas
+      total = stake * currentBetType.bets;
+    } else if (betType === "simple") {
       total = stake * selections.length;
     } else {
       total = stake;
@@ -60,7 +72,18 @@ export default function BettingCalculator() {
     let totalReturn = 0;
     const stakeToUse = isComposite ? stake * 2 : stake;
 
-    if (betType === "simple") {
+    if (currentBetType) {
+      // Para tipos especiais, calcula o retorno baseado no número de apostas
+      let accumulatedOdds = 1;
+      selections.forEach((selection) => {
+        if (selection.result === "Para Ganhar") {
+          accumulatedOdds *= selection.odds;
+        }
+      });
+
+      // Multiplica pelo stake e pelo número de apostas
+      totalReturn = stakeToUse * accumulatedOdds * currentBetType.bets;
+    } else if (betType === "simple") {
       selections.forEach((selection) => {
         let selectionReturn = 0;
 
@@ -90,12 +113,11 @@ export default function BettingCalculator() {
         totalReturn += selectionReturn;
       });
     } else {
-      // Para apostas acumuladas
+      // Para apostas acumuladas normais
       let accumulatedOdds = 1;
       let hasLoss = false;
       let activeSelections = 0;
 
-      // Primeiro calcula as odds acumuladas
       selections.forEach((selection) => {
         if (selection.result !== "Anulada / N/P") {
           activeSelections++;
@@ -123,7 +145,6 @@ export default function BettingCalculator() {
       if (hasLoss || activeSelections === 0) {
         totalReturn = 0;
       } else {
-        // Para V/C em acumulada, multiplicamos o resultado final por 29.9008
         if (isComposite) {
           accumulatedOdds = (accumulatedOdds * 29.9008) / 56;
         }
@@ -222,6 +243,28 @@ export default function BettingCalculator() {
     }
   };
 
+  const handleMoreOptionsSelect = (selections: number) => {
+    const selectedBetType = BET_TYPES.find(
+      (bt) => bt.selections === selections
+    );
+    if (selectedBetType) {
+      setBetType("simple");
+      setNumSelections(selections);
+      setCurrentBetType(selectedBetType);
+
+      // Cria o número correto de seleções simples
+      const newSelections = Array(selections)
+        .fill(null)
+        .map((_, index) => ({
+          odds: 2.0,
+          id: Date.now() + index,
+          result: "Para Ganhar" as BetResult,
+        }));
+
+      setSelections(newSelections);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-6 bg-gray-900 text-white rounded-lg shadow-xl">
       <h1 className="text-2xl font-bold mb-6">Calculadora de Aposta</h1>
@@ -247,7 +290,7 @@ export default function BettingCalculator() {
             Simples
           </button>
           <button
-            onClick={() => handleBetTypeChange("more")}
+            onClick={() => setBetTypeModalOpen(true)}
             className={`p-2 rounded ${
               betType === "more" ? "bg-green-600" : "bg-gray-700"
             }`}
@@ -268,8 +311,15 @@ export default function BettingCalculator() {
       {/* Selections */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg">Seleções {selections.length}</h2>
-          {selections.length < 20 && (
+          <h2 className="text-lg">
+            Seleções {selections.length}
+            {currentBetType && (
+              <span className="text-sm text-gray-400 ml-2">
+                ({currentBetType.name})
+              </span>
+            )}
+          </h2>
+          {selections.length < 20 && !currentBetType && (
             <button
               onClick={addSelection}
               className="text-green-400 hover:text-green-300"
@@ -399,6 +449,13 @@ export default function BettingCalculator() {
                 ?.deadHeatConfig
             : undefined
         }
+      />
+
+      {/* Bet Type Modal */}
+      <BetTypeModal
+        isOpen={betTypeModalOpen}
+        onClose={() => setBetTypeModalOpen(false)}
+        onSelect={handleMoreOptionsSelect}
       />
     </div>
   );
