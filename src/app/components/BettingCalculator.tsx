@@ -8,6 +8,7 @@ import {
   BET_TYPES,
   BetTypeOption,
 } from "../types/betting";
+import Image from "next/image";
 import SelectionCounter from "./SelectionCounter";
 import BetResultModal from "./BetResultModal";
 import BetTypeModal from "./BetTypeModal";
@@ -266,7 +267,24 @@ export default function BettingCalculator() {
   };
 
   return (
+    
     <div className="max-w-2xl mx-auto p-6 bg-gray-900 text-white rounded-lg shadow-xl">
+
+<header className="flex flex-col md:flex-row justify-center items-center mb-10">
+        {/* Logo */}
+        <div className="mb-6 md:mb-0">
+          <Image
+            src="/image.png" // Substitua pelo caminho do seu logo
+            alt="Logo da Empresa"
+            className="h-20 w-auto justify-center items-center drop-shadow-md"
+          />
+        </div>
+
+        {/* Barra de Pesquisa */}
+        
+      </header>
+
+
       <h1 className="text-2xl font-bold mb-6">Calculadora de Aposta</h1>
 
       {/* Bet Type Selection */}
