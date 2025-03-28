@@ -32,9 +32,6 @@ export const BET_TYPES: BetTypeOption[] = [
   { name: "Múltiplas de 6", selections: 6, bets: 1 },
   { name: "Múltiplas de 7", selections: 7, bets: 1 },
   { name: "Múltiplas de 8", selections: 8, bets: 1 },
-  { name: "Trixie", selections: 3, bets: 4 },
-  { name: "Yankee", selections: 4, bets: 11 },
-  { name: "Canadense / Super Yankee", selections: 5, bets: 26 },
 ];
 
 export type BetCalculation = {
